@@ -26,7 +26,7 @@
 
 ## 在线demo
 
-[选中物品分类获取物品和剩余的例子(codesandbox需翻墙)](https://codesandbox.io/s/functionorder-demo-f1kqwz)
+[在线超市](https://codesandbox.io/s/functionorder-demo-f1kqwz)
 
 ## 运行机制
 ![流程图](https://pic.imgdb.cn/item/6255959b239250f7c5103c3b.jpg)
