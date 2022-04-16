@@ -47,24 +47,41 @@ lead to scattered logic and difficult code testing and maintenance.
 
 ```jsx
    import {useFunctionOrderState} from 'react-function-order'
-    function App() {
-        const {actionState, foIns} = useFunctionOrderState({action: JustFnAction})
-        useEffect(() => {
-            foIns.run(2)
-        }, [])
+
+    class JustFnAction {
     
-        useEffect(() => {
-            console.log('actionState Change', actionState)
-            // actionState Change {}
-            // actionState Change {SimpleAction/getActionResult: 7}
-        }, [actionState])
+        plus(num) {
+            return 1 + num
+        }
     
-        return (
-            <div className="App">
-                {actionState['JustFnAction/getActionResult']}
-            </div>
-        )
+        square(num) {
+            return Math.pow(num, 2)
+        }
+    
+        minus(num) {
+            return num - 2
+        }
     }
+
+
+    function App() {
+            const {actionState, foIns} = useFunctionOrderState({action: JustFnAction})
+            useEffect(() => {
+                foIns.run(2)
+            }, [])
+        
+            useEffect(() => {
+                console.log('actionState Change', actionState)
+                // actionState Change {}
+                // actionState Change {SimpleAction/getActionResult: 7}
+            }, [actionState])
+        
+            return (
+                <div className="App">
+                    {actionState['JustFnAction/getActionResult']}
+                </div>
+            )
+        }
 ```
 
 ### situation 2:  sync functions with async functions
@@ -72,6 +89,24 @@ lead to scattered logic and difficult code testing and maintenance.
 
 ```jsx
    import {useFunctionOrderState} from 'react-function-order'
+    class FnReturnPromiseAction {
+        plus(num) {
+            return 1 + num
+        }
+    
+        square(num) {
+            return Math.pow(num, 2)
+        }
+    
+        minus(num) {
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    resolve(num - 2)
+                }, 200)
+    
+            }))
+        }
+    }
     function App() {
         const {actionState, foIns} = useFunctionOrderState({action: FnReturnPromiseAction})
         useEffect(() => {
@@ -97,6 +132,51 @@ lead to scattered logic and difficult code testing and maintenance.
 
 ```jsx
    import {useFunctionOrderState,InitKeys} from 'react-function-order'
+
+    class PromiseIndependentAction {
+        init() {
+            return {
+                // Declare the functions's names that need to store the result
+                [InitKeys.saveResultNames]: ['storeMotoName', 'storeLocation'],
+                // Declare flat async functions name
+                [InitKeys.flatAsyncNames]: ['getPopularMotoByBrand', 'getLocationByBrand']
+            }
+        }
+    
+        getPopularMotoByBrand(brand) {
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    const map = {
+                        'honda': 'honda cm300',
+                        'suzuki': 'gsx250r'
+                    }
+                    resolve(map[brand])
+                }, 30)
+    
+            }))
+        }
+    
+        storeMotoName(res) {
+            return res
+        }
+    
+        getLocationByBrand(brand) {
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    const map = {
+                        'honda': 'Japan',
+                        'suzuki': 'Japan',
+                        'BMW': 'Ger'
+                    }
+                    resolve(map[brand])
+                }, 30)
+            }))
+        }
+    
+        storeLocation(res) {
+            return res
+        }
+    }
     function App() {
         const {actionState, foIns} = useFunctionOrderState({action: PromiseIndependentAction})
         useEffect(() => {
@@ -123,7 +203,37 @@ lead to scattered logic and difficult code testing and maintenance.
 
 
 ```jsx
-   import {useFunctionOrderState} from 'react-function-order'
+    import {useFunctionOrderState} from 'react-function-order'
+
+    class PromiseDependOnBeforePromiseAction {
+
+
+        getPopularMotoByBrand(brand) {
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    const map = {
+                        'honda': 'honda cm300',
+                        'suzuki': 'gsx250r'
+                    }
+                    resolve(map[brand])
+                }, 30)
+    
+            }))
+        }
+    
+        getWeightOfMotoName(motoName) {
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    const map = {
+                        'honda cm300': '170kg',
+                        'gsx250r': '180kg'
+                    }
+                    resolve(map[motoName])
+                }, 30)
+            }))
+        }
+    
+    }
     function App() {
         const {actionState, foIns} = useFunctionOrderState({action: PromiseDependOnBeforePromiseAction})
         useEffect(() => {
