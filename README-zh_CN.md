@@ -24,7 +24,7 @@
     npm i react-function-order -S   // or yarn add react-function-order -S   
 ```
 
-## 在线demo(react)
+## 在线demo
 
 [选中物品分类获取物品和剩余的例子(codesandbox需翻墙)](https://codesandbox.io/s/functionorder-demo-f1kqwz)
 

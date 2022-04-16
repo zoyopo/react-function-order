@@ -32,7 +32,7 @@ lead to scattered logic and difficult code testing and maintenance.
 ```bash
     npm i react-function-order -S   // or yarn add react-function-order -S   
 ```
-## online demo(react)
+## online demo
 
 [An Example about select the item category to get the items and the remaining ](https://codesandbox.io/s/functionorder-demo-f1kqwz)
 
