@@ -78,7 +78,7 @@ lead to scattered logic and difficult code testing and maintenance.
         
             return (
                 <div className="App">
-                    {actionState['JustFnAction/getActionResult']}
+                    {actionState['getActionResult']}
                 </div>
             )
         }
@@ -121,7 +121,7 @@ lead to scattered logic and difficult code testing and maintenance.
     
         return (
             <div className="App">
-                {actionState['FnReturnPromiseAction/getActionResult']}
+                {actionState['getActionResult']}
             </div>
         )
     }
@@ -186,14 +186,14 @@ lead to scattered logic and difficult code testing and maintenance.
         useEffect(() => {
             console.log('actionState Change', actionState)     
             //{
-            // PromiseIndependentAction/storeMotoName:"gsx250r",
-            //  PromiseIndependentAction/storeLocation:'Japan'
+            // storeMotoName:"gsx250r",
+            // storeLocation:'Japan'
             // }
         }, [actionState])
     
         return (
             <div className="App">
-                {actionState['PromiseIndependentAction/storeMotoName']}
+                {actionState['storeMotoName']}
             </div>
         )
     } 
@@ -249,7 +249,7 @@ lead to scattered logic and difficult code testing and maintenance.
     
         return (
             <div className="App">
-                {actionState['PromiseDependOnBeforePromiseAction/getActionResult']}
+                {actionState['getActionResult']}
             </div>
         )
     }
@@ -258,3 +258,6 @@ lead to scattered logic and difficult code testing and maintenance.
 ## Know more about functionOrder
 
 [Click here.](https://github.com/zoyopo/function-order)
+
+## Change Log
+0.1.8 —— Change actionState key from className/methodName to methodName
