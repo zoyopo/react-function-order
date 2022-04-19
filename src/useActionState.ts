@@ -25,8 +25,12 @@ const useActionState = (props: IProps<TObj>) => {
         foIns = createFunctionPipelineByClass(props.action, set)
         cachedFoIns.current = foIns
     }
+    const dispatch = (action: Type<TObj>) => {
+        let foIns = createFunctionPipelineByClass(action, set)
+        foIns.run(actionState)
+    }
 
-    return {actionState, foIns}
+    return {actionState, foIns, dispatch}
 }
 
 export default useActionState
