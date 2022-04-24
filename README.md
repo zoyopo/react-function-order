@@ -42,7 +42,7 @@ lead to scattered logic and difficult code testing and maintenance.
 
 ## how to use
 
-### situation 1:all sync pure functions
+### The simplest use
 
 
 ```jsx
@@ -62,29 +62,26 @@ lead to scattered logic and difficult code testing and maintenance.
             return num - 2
         }
     }
-
-
     function App() {
-            const {actionState, foIns} = useFunctionOrderState({action: JustFnAction})
-            useEffect(() => {
-                foIns.run(2)
-            }, [])
-        
-            useEffect(() => {
-                console.log('actionState Change', actionState)
-                // actionState Change {}
-                // actionState Change {SimpleAction/getActionResult: 7}
-            }, [actionState])
-        
-            return (
-                <div className="App">
-                    {actionState['getActionResult']}
-                </div>
-            )
-        }
+        const {actionState, foIns} = useFunctionOrderState({action: JustFnAction})
+        useEffect(() => {
+            foIns.run(2)
+        }, [])
+    
+        useEffect(() => {
+            console.log('actionState Change', actionState)
+            // actionState Change {}
+            // actionState Change {getActionResult: 7}
+        }, [actionState])
+    
+        return (
+            <div className="App">
+                {actionState['getActionResult']}
+            </div>
+        )
+    }
 ```
-
-### situation 2:  sync functions with async functions
+### If we change `minus` and `Square` to asynchronous functions
 
 
 ```jsx
@@ -95,7 +92,11 @@ lead to scattered logic and difficult code testing and maintenance.
         }
     
         square(num) {
-            return Math.pow(num, 2)
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    resolve(Math.pow(num, 2))
+                },100)
+            }))
         }
     
         minus(num) {
@@ -116,7 +117,7 @@ lead to scattered logic and difficult code testing and maintenance.
         useEffect(() => {
             console.log('actionState Change', actionState)
             // actionState Change {}
-            // actionState Change {SimpleAction/getActionResult: 7}
+            // actionState Change {getActionResult: 7}
         }, [actionState])
     
         return (
@@ -126,10 +127,11 @@ lead to scattered logic and difficult code testing and maintenance.
         )
     }
 ```
+`react-function-order` will automatically execute asynchronous functions in synchronous order for us
 
-### Situation3: flat async functions
+###  Execute multiple parallel asynchronous functions when`run`
 
-
+1. The functions between parallel and asynchronous functions are still executed in turn
 ```jsx
    import {useFunctionOrderState,InitKeys} from 'react-function-order'
 
@@ -187,7 +189,7 @@ lead to scattered logic and difficult code testing and maintenance.
             console.log('actionState Change', actionState)     
             //{
             // storeMotoName:"gsx250r",
-            // storeLocation:'Japan'
+            //  storeLocation:'Japan'
             // }
         }, [actionState])
     
@@ -196,68 +198,128 @@ lead to scattered logic and difficult code testing and maintenance.
                 {actionState['storeMotoName']}
             </div>
         )
-    } 
+    }
 ```
 
-### Situation4:  async function depend on async function before
+We can declare `flatAsyncNames` in the `init` function and mark them as asynchronous functions executed in parallel. The functions after these functions will still be executed in turn. Now there are two results. We need to use two `keys` to store them.
 
+Therefore, we can declare the function that stores the value in `saveResultNames` and use it as a `key`.
+
+2. An asynchronous function returns promises executed in parallel
+```jsx
+   import { useFunctionOrderState } from 'react-function-order'
+class getMotoAction {
+    getBrandNameById(id) {
+        return new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    7: 'suzuki',
+                    8: 'honda'
+                }
+                resolve(map[id])
+            }, 30)
+
+        }))
+    }
+
+    getPopularMotoByBrand(brand) {
+        let p = new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    'honda': 'honda cm300',
+                    'suzuki': 'gsx250r'
+                }
+                resolve(map[brand])
+            }, 30)
+        }))
+
+        let p2 = new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    'honda': 'Japan',
+                    'suzuki': 'Japan',
+                    'BMW': 'Ger'
+                }
+                resolve(map[brand])
+            }, 30)
+        }))
+        return [p,p2]
+    }
+}
+
+function App() {
+    const {actionState, foIns} = useFunctionOrderState({action: getMotoAction})
+    useEffect(() => {
+        foIns.run(7)
+    }, [])
+
+    useEffect(() => {
+        console.log('actionState Change', actionState)
+        //{
+        // getActionResult:["gsx250r","Japan"]        
+        // }
+    }, [actionState])
+
+    return (
+        <div className="App">
+            {actionState['getActionResult']}
+        </div>
+    )
+}
+```
+
+
+### How can we modify the value stored in`actionState`(follow the above `getMotoAction`)
 
 ```jsx
-    import {useFunctionOrderState} from 'react-function-order'
+import { useFunctionOrderState,ModifyParams } from "react-function-order"
+class ModifyMotoAction {
 
-    class PromiseDependOnBeforePromiseAction {
-
-
-        getPopularMotoByBrand(brand) {
-            return new Promise((resolve => {
-                setTimeout(() => {
-                    const map = {
-                        'honda': 'honda cm300',
-                        'suzuki': 'gsx250r'
-                    }
-                    resolve(map[brand])
-                }, 30)
-    
-            }))
-        }
-    
-        getWeightOfMotoName(motoName) {
-            return new Promise((resolve => {
-                setTimeout(() => {
-                    const map = {
-                        'honda cm300': '170kg',
-                        'gsx250r': '180kg'
-                    }
-                    resolve(map[motoName])
-                }, 30)
-            }))
-        }
-    
+    modifyActionState(params:ModifyParams){
+        const {actionState,runParams} =params
+        let actionResult = actionState["getActionResult"]
+        actionResult && (actionResult[1]= runParams)
+        return actionResult
     }
-    function App() {
-        const {actionState, foIns} = useFunctionOrderState({action: PromiseDependOnBeforePromiseAction})
-        useEffect(() => {
-            foIns.run('suzuki')
-        }, [])
+}
+function App() {
+    const {actionState, foIns,dispatch} = useFunctionOrderState({action: getMotoAction})
+    useEffect(() => {
+        foIns.run(7)
+    }, [])
+
+    useEffect(() => {
+        console.log('actionState Change', actionState)
+        // run
+        //{
+        //  getActionResult:["gsx250r","Japan"]        
+        // }
+        // handleModify
+        //{
+        //  getActionResult:["gsx250r","china"]        
+        // }
+    }, [actionState])
     
-        useEffect(() => {
-            console.log('actionState Change', actionState)     
-            //{
-            // PromiseDependOnBeforePromiseAction/getActionResult:"180kg"        
-            // }
-        }, [actionState])
-    
-        return (
-            <div className="App">
-                {actionState['getActionResult']}
-            </div>
-        )
+    const handleModify = () =>{
+        dispatch(ModifyMotoAction,'china')
     }
+
+    return (
+        <div className="App">
+            <button onClick={handleModify}>modify result</button>
+            {actionState['getActionResult']}
+        </div>
+    )
+}
 ```
 
-## Know more about functionOrder
+We exposed a `dispatch` method and passed in action and parameters to modify the `actionState`
 
-[Click here.](https://github.com/zoyopo/function-order)
+## Know more about`functionOrder`
+
+[Click Here](https://github.com/zoyopo/function-order)
+
 
 ## Change Log
+0.1.9 —— add dispatch method in useFunctionOrderState,to modify loaded data
 0.1.8 —— Change actionState key from className/methodName to methodName

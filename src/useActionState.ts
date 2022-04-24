@@ -15,6 +15,17 @@ type IProps<T> = {
 type StateInfo<T> = {
     [props: string]: T
 }
+
+type ActionState = {
+    [props: string]: any;
+    getActionResult: any;
+};
+
+export type ModifyParams = {
+    actionState: ActionState
+    runParams?: any
+}
+
 const useActionState = (props: IProps<TObj>) => {
     const [actionState, set] = useState<StateInfo<any>>({})
     let cachedFoIns = useRef<FunctionPipeline | null>(null)
@@ -25,9 +36,9 @@ const useActionState = (props: IProps<TObj>) => {
         foIns = createFunctionPipelineByClass(props.action, set)
         cachedFoIns.current = foIns
     }
-    const dispatch = (action: Type<TObj>,runParams?:any) => {
+    const dispatch = (action: Type<TObj>, runParams?: any) => {
         let foIns = createFunctionPipelineByClass(action, set)
-        foIns.run({actionState,runParams})
+        foIns.run({actionState, runParams})
     }
 
     return {actionState, foIns, dispatch}

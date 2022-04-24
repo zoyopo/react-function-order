@@ -38,7 +38,7 @@
 
 ## 基本使用
 
-### 情景1：同步函数
+### 最简单的使用
 
 
 ```jsx
@@ -67,7 +67,7 @@
         useEffect(() => {
             console.log('actionState Change', actionState)
             // actionState Change {}
-            // actionState Change {SimpleAction/getActionResult: 7}
+            // actionState Change {getActionResult: 7}
         }, [actionState])
     
         return (
@@ -77,7 +77,7 @@
         )
     }
 ```
-### 情景2：同步函数和异步函数
+### 如果我们将`minus`,`square`改为异步函数
 
 
 ```jsx
@@ -88,7 +88,11 @@
         }
     
         square(num) {
-            return Math.pow(num, 2)
+            return new Promise((resolve => {
+                setTimeout(() => {
+                    resolve(Math.pow(num, 2))
+                },100)
+            }))
         }
     
         minus(num) {
@@ -109,7 +113,7 @@
         useEffect(() => {
             console.log('actionState Change', actionState)
             // actionState Change {}
-            // actionState Change {SimpleAction/getActionResult: 7}
+            // actionState Change {getActionResult: 7}
         }, [actionState])
     
         return (
@@ -119,9 +123,11 @@
         )
     }
 ```
+`react-function-order`会自动为我们将异步函数按照同步顺序执行
 
-### Situation3: 扁平的异步函数
+### `run`的时候执行多个并行的异步函数
 
+1. 并行异步函数之间的函数依然依次执行
 ```jsx
    import {useFunctionOrderState,InitKeys} from 'react-function-order'
 
@@ -190,64 +196,119 @@
         )
     }
 ```
-### Situation4:  异步函数依赖于前面的异步函数
 
+我们可以在`init`函数中声明`flatAsyncNames`，标记其为并行执行的异步函数，在这些函数之后的函数，依然会依次执行。那么现在有两个结果，我们需要利用两个`key`来存储，
+所以我们可以在`saveResultNames`声明存储值的函数，并以此为`key`
 
-
+2. 一个异步函数返回并行执行的promises
 ```jsx
-   import {useFunctionOrderState} from 'react-function-order'
+   import { useFunctionOrderState } from 'react-function-order'
+class getMotoAction {
+    getBrandNameById(id) {
+        return new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    7: 'suzuki',
+                    8: 'honda'
+                }
+                resolve(map[id])
+            }, 30)
 
-    class PromiseDependOnBeforePromiseAction {
-    
-    
-        getPopularMotoByBrand(brand) {
-            return new Promise((resolve => {
-                setTimeout(() => {
-                    const map = {
-                        'honda': 'honda cm300',
-                        'suzuki': 'gsx250r'
-                    }
-                    resolve(map[brand])
-                }, 30)
-    
-            }))
-        }
-    
-        getWeightOfMotoName(motoName) {
-            return new Promise((resolve => {
-                setTimeout(() => {
-                    const map = {
-                        'honda cm300': '170kg',
-                        'gsx250r': '180kg'
-                    }
-                    resolve(map[motoName])
-                }, 30)
-            }))
-        }
-    
+        }))
     }
+
+    getPopularMotoByBrand(brand) {
+        let p = new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    'honda': 'honda cm300',
+                    'suzuki': 'gsx250r'
+                }
+                resolve(map[brand])
+            }, 30)
+        }))
+
+        let p2 = new Promise((resolve => {
+            setTimeout(() => {
+                const map = {
+                    'honda': 'Japan',
+                    'suzuki': 'Japan',
+                    'BMW': 'Ger'
+                }
+                resolve(map[brand])
+            }, 30)
+        }))
+        return [p,p2]
+    }
+}
 
 function App() {
-        const {actionState, foIns} = useFunctionOrderState({action: PromiseDependOnBeforePromiseAction})
-        useEffect(() => {
-            foIns.run('suzuki')
-        }, [])
-    
-        useEffect(() => {
-            console.log('actionState Change', actionState)     
-            //{
-            //  getActionResult:"180kg"        
-            // }
-        }, [actionState])
-    
-        return (
-            <div className="App">
-                {actionState['getActionResult']}
-            </div>
-        )
-    }
+    const {actionState, foIns} = useFunctionOrderState({action: getMotoAction})
+    useEffect(() => {
+        foIns.run(7)
+    }, [])
+
+    useEffect(() => {
+        console.log('actionState Change', actionState)
+        //{
+        // getActionResult:["gsx250r","Japan"]        
+        // }
+    }, [actionState])
+
+    return (
+        <div className="App">
+            {actionState['getActionResult']}
+        </div>
+    )
+}
+
 ```
 
+
+### 我们如何修改存储在`actionState`中的值(沿用上面的`getMotoAction`)
+
+```jsx
+import { useFunctionOrderState,ModifyParams } from "react-function-order"
+class ModifyMotoAction {
+
+    modifyActionState(params:ModifyParams){
+        const {actionState,runParams} =params
+        let actionResult = actionState["getActionResult"]
+        actionResult && (actionResult[1]= runParams)
+        return actionResult
+    }
+}
+function App() {
+    const {actionState, foIns,dispatch} = useFunctionOrderState({action: getMotoAction})
+    useEffect(() => {
+        foIns.run(7)
+    }, [])
+
+    useEffect(() => {
+        console.log('actionState Change', actionState)
+        // run
+        //{
+        //  getActionResult:["gsx250r","Japan"]        
+        // }
+        // handleModify
+        //{
+        //  getActionResult:["gsx250r","china"]        
+        // }
+    }, [actionState])
+    
+    const handleModify = () =>{
+        dispatch(ModifyMotoAction,'china')
+    }
+
+    return (
+        <div className="App">
+            <button onClick={handleModify}>modify result</button>
+            {actionState['getActionResult']}
+        </div>
+    )
+}
+```
+我们暴露出一个`dispatch`方法,传入action和参数，从而进行`actionState`的修改
 
 ## 了解更多关于`functionOrder`
 
@@ -255,4 +316,5 @@ function App() {
 
 
 ## Change Log
+0.1.9 —— add dispatch method in useFunctionOrderState,to modify loaded data
 0.1.8 —— Change actionState key from className/methodName to methodName
