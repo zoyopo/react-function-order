@@ -1,7 +1,7 @@
 
 ![logo](https://pic.imgdb.cn/item/625a4d6b239250f7c55b4257.png)
 
-[简体中文](https://github.com/zoyopo/FunctionPipeline/blob/master/README-zh_CN.md)
+[简体中文](https://github.com/zoyopo/react-function-order/blob/master/README-zh_CN.md)
 
 It provides a more standardized, efficient and easy to test functional programming method.
 
